@@ -800,5 +800,65 @@ void Octree::CreateFromVoxelGrid(const geometry::VoxelGrid& voxel_grid) {
     }
 }
 
+std::vector<size_t> Octree::CustomTraverse(size_t offset) {
+    std::vector<size_t> particle_list_of_leafs;
+    auto change_ids_with_list_id =
+            [&particle_list_of_leafs](
+                    const std::shared_ptr<OctreeNode>& src_node,
+                    const std::shared_ptr<OctreeNodeInfo>& src_node_info)
+            -> bool {
+        if (auto leaf_node =
+                    std::dynamic_pointer_cast<OctreePointColorLeafNode>(src_node)) {
+
+            std::set<size_t> set;
+            for (element : leaf_node.indices_) {
+                set.insert(element);
+            }
+
+        } else if (
+                auto src_leaf_node =
+                           std::dynamic_pointer_cast<OctreeLeafNode>(
+                                   src_node)) {
+
+            map_src_to_dst_node[src_leaf_node] = src_leaf_node->Clone();
+
+        } else {
+            utility::LogError("Internal error: unknown node type");
+        }
+        return false;
+    };
+    src_octree.Traverse(change_ids_with_list_id);
+    return particle_list_of_leafs;
+
+    /**
+    offset = len(all_combined_attributes["Coordinates"][0])
+    particle_ids = np.hstack(all_combined_attributes["ParticleIDs"]).astype(np.int64)
+
+    indices_for_octree: List[np.ndarray] = []
+
+    def change_ids_with_list_id(
+        node: o3d.geometry.OctreeNode, _node_info: o3d.geometry.OctreeNodeInfo
+    ) -> Optional[bool]:
+        """Traverse octree."""
+        if isinstance(node, o3d.geometry.OctreeLeafNode):
+
+            global IDX  # pylint: disable=global-statement
+            _, indices = np.unique(particle_ids[node.indices], return_index=True)
+            all_indices_without_duplicates = np.array(node.indices)[indices]
+            all_indices_without_duplicates[all_indices_without_duplicates >= offset] -= offset
+
+            fields_in_leaf = fields_array[all_indices_without_duplicates]
+            sorted_indices = np.array(np.argsort(fields_in_leaf)[::-1])
+            indices_for_octree.append(np.array(all_indices_without_duplicates[sorted_indices]))
+            node.indices = [IDX]
+            IDX += 1
+            return True
+
+        if isinstance(node, o3d.geometry.OctreeInternalPointNode):
+            node.indices = []
+
+        return None
+        */
+
 }  // namespace geometry
 }  // namespace open3d
